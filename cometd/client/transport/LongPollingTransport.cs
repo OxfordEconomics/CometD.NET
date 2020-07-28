@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using Cometd.Bayeux;
 using Cometd.Common;
-
+using System.Collections.Specialized;
 
 namespace Cometd.Client.Transport
 {
@@ -22,8 +22,14 @@ namespace Cometd.Client.Transport
         private bool _appendMessageType;
 
         public LongPollingTransport(IDictionary<String, Object> options)
+            : this(options, new NameValueCollection())
+        {
+        }
+
+        public LongPollingTransport(IDictionary<String, Object> options, NameValueCollection transportHeaders)
             : base("long-polling", options)
         {
+            this.transportHeaders = transportHeaders;
         }
 
         public override bool accept(String bayeuxVersion)
@@ -93,6 +99,7 @@ namespace Cometd.Client.Transport
         private ManualResetEvent ready = new ManualResetEvent(true);
         private List<LongPollingRequest> transportQueue = new List<LongPollingRequest>();
         private HashSet<LongPollingRequest> transmissions = new HashSet<LongPollingRequest>();
+        private NameValueCollection transportHeaders;
 
         private void performNextRequest()
         {
@@ -153,6 +160,8 @@ namespace Cometd.Client.Transport
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
             request.Method = "POST";
             request.ContentType = "application/json;charset=UTF-8";
+
+            request.Headers.Add(this.transportHeaders);
 
             if (request.CookieContainer == null)
                 request.CookieContainer = new CookieContainer();
